@@ -1,6 +1,4 @@
-# school
-
-> My divine Nuxt.js project
+# Firebase Auth User Manager
 
 ## Build Setup
 
