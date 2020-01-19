@@ -7,21 +7,21 @@ module.exports = function(firebase) {
     res.status(200).jsonp(listUsersResult)
   })
 
-  router.post('/user/create', async (req, res) => {
+  router.post('/user', async (req, res) => {
+    console.log('create!')
     try {
       const {
         displayName = null,
         email = null,
         password = null,
-        role = null
+        role = null,
+        phoneNumber = null
       } = req.body
       const { uid } = await firebase.auth().createUser({
         displayName,
         email,
         password
       })
-
-      if (role) await firebase.auth().setCustomUserClaims(uid, { [role]: true })
 
       res.status(200).jsonp({ uid })
     } catch (error) {
@@ -39,20 +39,25 @@ module.exports = function(firebase) {
     }
   })
 
-  router.delete('/user/:uid', async (req, res) => {
+  router.delete('/user', async (req, res) => {
     try {
-      const { uid } = req.params
-      await firebase.auth().deleteUser(uid)
-      res.status(200)
+      const { uid = '' } = req.query
+      console.log('delete users', uid)
+      const uidArr = uid.split(',')
+
+      uidArr.forEach(async uid => {
+        await firebase.auth().deleteUser(uid)
+      })
+
+      res.status(200).send('OK')
     } catch (error) {
       res.status(400).jsonp(error)
     }
   })
 
-  router.put('/user/:uid', async (req, res) => {
+  router.put('/user', async (req, res) => {
     try {
-      const { uid } = req.params,
-        user = ({
+      const user = ({
           email = null,
           emailVerified = null,
           password = null,
@@ -60,11 +65,26 @@ module.exports = function(firebase) {
           disabled = null,
           phoneNumber = null,
           displayName = null
-        } = req.body)
-
+        } = req.body),
+        { uid = null } = req.body
+      console.log({ user, uid })
       await firebase.auth().updateUser(uid, user)
 
-      res.status(200).send('OK')
+      res.status(200).jsonp({ uid })
+    } catch (error) {
+      res.status(400).jsonp(error)
+    }
+  })
+
+  router.post('/user/claim', async (req, res) => {
+    console.log('user/claim')
+    try {
+      const { uid, role } = req.body
+
+      await firebase.auth().setCustomUserClaims(uid, null) //remove all claims
+
+      await firebase.auth().setCustomUserClaims(uid, { [role]: true })
+      res.send(200)
     } catch (error) {
       res.status(400).jsonp(error)
     }
